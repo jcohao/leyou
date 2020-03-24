@@ -1,0 +1,52 @@
+server:
+  port: 10010
+spring:
+  application:
+    name: api-gateway
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:10086/eureka    # 往这个地址去注册
+    registry-fetch-interval-seconds: 5    # 每隔 5 秒拉取一次服务列表
+  instance:
+    prefer-ip-address: true   # 显示 ip 地址，而不是 localhost 这种
+    ip-address: 127.0.0.1     # 绑定 ip 地址
+    instance-id: ${spring.application.name}:${server.port}    # 定制实例 id
+zuul:
+  prefix: /api
+  retryable: true   # 开启重试机制
+  routes:
+    item-service: /item/**
+    search-service: /search/**
+    user-service: /user/**
+    auth-service: /auth/**
+  # ignored-patterns: /upload/**    # 文件上传不能经过 zuul 网关，不然很容易阻塞，这个设置就是让网关忽略指定的地址
+  ignored-services:
+    - upload-service  # 功能跟上面注释的一样，过滤掉所有想过服务的请求
+  add-host-header: true # 携带请求本身的 host 头信息
+  sensitive-headers: # 禁止使用的头信息设置为空，否则 set-cookie 会被过滤掉
+ribbon:
+  ConnectTimeout: 250   # 连接超时时间 (ms)
+  ReadTimeout: 2000     # 读超时
+  OkToRetryOnAllOperations: true    # 对所有操作都开启重试
+  MaxAutoRetriesNextServer: 1       # 同一个服务的最大重试次数
+  MaxAutoRetries: 1                 # 同一个实例的最大重试次数
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMillisecond: 10000   # 服务超过指定时间未响应则熔断
+ly:
+  jwt:
+    pubKeyPath: D:\rsa\rsa.pub # 公钥地址
+    cookieName: LY_TOKEN
+  filter:
+    allowPaths:
+      - /api/auth
+      - /api/search
+      - /api/user/register
+      - /api/user/check
+      - /api/user/code
+      - /api/item
